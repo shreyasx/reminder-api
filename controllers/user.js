@@ -46,15 +46,6 @@ exports.addReminder = (req, res) => {
 	});
 };
 
-exports.deleteReminder = (req, res) => {
-	Reminder.deleteOne({ _id: req.params.reminderId })
-		.then(res.json("done"))
-		.catch(e => {
-			console.log(e);
-			res.json("error");
-		});
-};
-
 exports.allReminders = (req, res) => {
 	Reminder.find({ user: req.profile.username }, (er, reminders) => {
 		if (er) {

@@ -5,7 +5,6 @@ const {
 	getUserById,
 	addReminder,
 	allReminders,
-	deleteReminder,
 	addTodo,
 	allTodos,
 	deleteTodo,
@@ -17,13 +16,6 @@ const {
 const { isSignedIn, isAuthenticated } = require("../controllers/auth");
 
 router.param("username", getUserById);
-
-router.get(
-	"/:username/delete/reminder/:reminderId",
-	isSignedIn,
-	isAuthenticated,
-	deleteReminder
-);
 
 router.get(
 	"/:username/delete/todo/:todoId",
