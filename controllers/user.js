@@ -4,7 +4,6 @@ const Todo = require("../models/todo");
 const nodemailer = require("nodemailer");
 const Token = require("../models/token");
 const crypto = require("crypto");
-const { log } = require("console");
 
 const transporter = nodemailer.createTransport({
 	service: "gmail",
