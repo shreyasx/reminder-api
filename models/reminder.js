@@ -7,6 +7,7 @@ var reminderSchema = new mongoose.Schema(
 			required: true,
 			trim: true,
 		},
+		timeoutID: { type: Number, required: true },
 		user: {
 			type: String,
 			required: true,

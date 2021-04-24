@@ -11,6 +11,7 @@ const {
 	updateTodo,
 	confirmationPost,
 	verify,
+	deleteReminder,
 	isVerified,
 } = require("../controllers/user");
 const { isSignedIn, isAuthenticated } = require("../controllers/auth");
@@ -40,6 +41,13 @@ router.post(
 	isSignedIn,
 	isAuthenticated,
 	addReminder
+);
+
+router.get(
+	"/:username/delete/reminder/:reminderId",
+	isSignedIn,
+	isAuthenticated,
+	deleteReminder
 );
 
 router.get("/verify/:username", isSignedIn, isAuthenticated, verify);

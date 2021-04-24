@@ -33,16 +33,58 @@ exports.addReminder = (req, res) => {
 		res.json("Date must be greater than current time.");
 		return;
 	}
-	const rem = new Reminder(req.body);
+	const date = new Date(req.body.date).toString().split(" GMT")[0];
+	const timeLeft = req.body.date - Date.now();
+	const mailOptions = {
+		from: process.env.NODEMAILER_EMAIL,
+		to: req.profile.email,
+		subject: "Your Reminder",
+		text:
+			`Hey ${req.profile.username},\n\n` +
+			"I'm Shreyas, the owner of Reminders & Todos website. You're receiving this mail " +
+			"because you had set a reminder on my site.\n" +
+			"Title: " +
+			req.body.title +
+			"\n" +
+			"Date: " +
+			date +
+			"\nYou can reply to this mail for any queries or complaints." +
+			"\n\nRegards\nShreyas Jamkhandi",
+	};
+
+	const sendMail = () => {
+		transporter.sendMail(mailOptions, function (err, msg) {
+			if (err) console.log("Send mail error -", err.message);
+			else
+				console.log(`Sent a reminder to ${req.profile.username} sucessfully.`);
+		});
+	};
+
+	const timeoutID = setTimeout(sendMail, timeLeft);
+
+	const rem = new Reminder({ ...req.body, timeoutID });
 	rem.save((er, reminder) => {
 		if (er) {
 			console.log(er);
 			res.status(400);
 			return;
 		}
-		const { title } = reminder;
-		res.json({ title });
-		setTimer(reminder, req.profile);
+		res.json(true);
+	});
+};
+
+exports.deleteReminder = (req, res) => {
+	Reminder.findOne({ _id: req.params.reminderId }, (error, reminder) => {
+		if (error) {
+			return res.status(400).json({ error: "No reminder found." });
+		}
+		clearTimeout(reminder.timeoutID);
+		Reminder.deleteOne({ _id: req.params.reminderId })
+			.then(res.json("done"))
+			.catch(e => {
+				console.log(e);
+				res.json("error");
+			});
 	});
 };
 
@@ -111,39 +153,6 @@ exports.updateTodo = (req, res) => {
 			res.json("done");
 		});
 	});
-};
-
-const setTimer = (reminder, profile) => {
-	const date = new Date(reminder.date).toString().split(" GMT")[0];
-	const timeLeft = Date.parse(reminder.date) - Date.now();
-	const mailOptions = {
-		from: process.env.NODEMAILER_EMAIL,
-		to: profile.email,
-		subject: "Your Reminder",
-		text:
-			`Hey ${profile.username},\n\n` +
-			"I'm Shreyas, the owner of Reminders & Todos website. You're receiving this mail " +
-			"because you had set a reminder on my site.\n" +
-			"Title: " +
-			reminder.title +
-			"\n" +
-			"Date: " +
-			date +
-			"\nYou can reply to this mail for any queries or complaints." +
-			"\n\nRegards\nShreyas Jamkhandi",
-	};
-
-	const sendMail = () => {
-		transporter.sendMail(mailOptions, function (err, msg) {
-			if (err) console.log("Send mail error -", err.message);
-			else {
-				console.log(`Sent a reminder to ${profile.username} sucessfully.`);
-				Reminder.deleteOne({ _id: reminder._id }).catch(console.log);
-			}
-		});
-	};
-
-	setTimeout(sendMail, timeLeft);
 };
 
 const createToken = userID => {
