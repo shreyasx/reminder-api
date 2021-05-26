@@ -41,10 +41,15 @@ exports.signup = (req, res) => {
 				return;
 			}
 			const user = new User(req.body);
-			user.save((error, use) => {
+			user.save((error, user) => {
 				if (error)
 					return res.status(400).json({ error: "Unable to save user in DB." });
-				res.json("done");
+				const token = jwt.sign({ _id: user._id }, process.env.SECRET);
+				const { name, _id, username, email, isVerified } = user;
+				return res.json({
+					token,
+					user: { name, _id, username, email, isVerified },
+				});
 			});
 		});
 	});
@@ -74,10 +79,7 @@ exports.signin = (req, res) => {
 			});
 		}
 
-		//create token
 		const token = jwt.sign({ _id: user._id }, process.env.SECRET);
-
-		//send response  to frontend
 		const { name, _id, username, email, isVerified } = user;
 		return res.json({
 			token,

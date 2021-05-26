@@ -33,7 +33,12 @@ exports.addReminder = (req, res) => {
 		res.json("Date must be greater than current time.");
 		return;
 	}
-	const date = new Date(req.body.date).toString().split(" GMT")[0];
+	const date = new Date(req.body.date).toLocaleDateString("en-IN", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	});
 	const timeLeft = req.body.date - Date.now();
 	const mailOptions = {
 		from: process.env.NODEMAILER_EMAIL,
