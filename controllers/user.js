@@ -33,10 +33,16 @@ exports.addReminder = (req, res) => {
 		res.json("Date must be greater than current time.");
 		return;
 	}
+	const time = new Date(req.body.date);
+	const currentOffset = time.getTimezoneOffset();
+	const ISTOffset = 330;
+	const ISTTime = new Date(
+		time.getTime() + (ISTOffset + currentOffset) * 60000
+	);
 	const date = new Intl.DateTimeFormat("en-IN", {
 		dateStyle: "long",
-		timeStyle: "long",
-	}).format(new Date(req.body.date));
+		timeStyle: "medium",
+	}).format(ISTTime);
 	const timeLeft = req.body.date - Date.now();
 	const mailOptions = {
 		from: process.env.NODEMAILER_EMAIL,
