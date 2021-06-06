@@ -27,6 +27,7 @@ const userRoutes = require("./routes/user");
 
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
+app.get("/", (req, res) => res.send("<h1>Backend for the reminder app.</h1>"));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}.`));
