@@ -27,10 +27,10 @@ exports.getUserById = (req, res, next, id) => {
 
 exports.addReminder = (req, res) => {
 	if (req.profile.isVerified !== true) {
-		res.status(400).json({ error: "Account not verified." });
+		return res.status(400).json({ error: "Account not verified." });
 	}
 	if (req.body.date < Date.now()) {
-		res.json("Date must be greater than current time.");
+		res.json({ error: "Date must be greater than current time." });
 		return;
 	}
 	const time = new Date(req.body.date);
@@ -78,7 +78,7 @@ exports.addReminder = (req, res) => {
 			res.status(400);
 			return;
 		}
-		res.json(true);
+		res.json(reminder);
 	});
 };
 
@@ -121,8 +121,8 @@ exports.addTodo = (req, res) => {
 			res.json(er);
 			return;
 		}
-		const { title } = todo;
-		res.json({ title });
+		const { _id, title, completed } = todo;
+		res.json({ _id, title, completed });
 	});
 };
 
