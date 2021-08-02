@@ -8,14 +8,8 @@ exports.signup = (req, res) => {
 
 	if (!errors.isEmpty()) {
 		return res.status(422).json({
-			error: errors.array()[0].msg + " for " + errors.array()[0].param,
+			error: errors.array()[0].msg,
 		});
-	}
-
-	if (req.body.username.length < 3) {
-		return res
-			.status(422)
-			.json({ error: "Username must be at least 3 characters long." });
 	}
 
 	User.findOne({ username: req.body.username }, (err, u) => {
@@ -57,25 +51,24 @@ exports.signup = (req, res) => {
 
 exports.signin = (req, res) => {
 	const errors = validationResult(req);
-
-	const { username, password } = req.body;
-
 	if (!errors.isEmpty()) {
 		return res.status(422).json({
 			error: errors.array()[0].msg,
 		});
 	}
 
+	const { username, password } = req.body;
+
 	User.findOne({ username }, (err, user) => {
 		if (err || !user) {
 			return res.status(400).json({
-				error: "No account with that username.",
+				error: "No account linked with that username.",
 			});
 		}
 
 		if (!user.authenticate(password)) {
 			return res.status(401).json({
-				error: "Username and password do not match",
+				error: "Incorrect password.",
 			});
 		}
 
