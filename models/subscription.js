@@ -12,7 +12,6 @@ var subscriptionSchema = new mongoose.Schema(
 			required: true,
 			trim: true,
 		},
-		completed: { type: Boolean, default: false, required: true },
 	},
 	{ timestamps: true }
 );

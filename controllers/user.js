@@ -76,12 +76,12 @@ exports.addReminder = (req, res) => {
 			transporter.sendMail(mailOptions, function (err, msg) {
 				if (err) {
 					console.log("Send mail error -", err.message);
-					resolve();
+					reject();
 				} else {
 					console.log(
 						`Sent a reminder to ${req.profile.username} sucessfully.`
 					);
-					reject();
+					solve();
 				}
 			});
 		});
