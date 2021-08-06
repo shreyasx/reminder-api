@@ -81,7 +81,7 @@ exports.addReminder = (req, res) => {
 					console.log(
 						`Sent a reminder to ${req.profile.username} sucessfully.`
 					);
-					solve();
+					resolve();
 				}
 			});
 		});
