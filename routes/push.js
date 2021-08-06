@@ -11,21 +11,27 @@ router.post("/:username", handleSubscribe);
 
 router.get("/test/:username", async (req, res) => {
 	try {
-		const subscription = await Subscription.findOne({
+		const subscriptions = await Subscription.find({
 			user: req.profile.username,
 		});
-		if (subscription) {
-			console.log(`Subscription found for ${req.profile.username}`);
-			const title = "PUSH PUSH";
-			const message = "You asked for it";
-			const payload = JSON.stringify({ title, message });
-			await webpush.sendNotification(subscription.subscription, payload);
-			return res.status(200).end();
+		if (subscriptions.length > 0) {
+			subscriptions.map(async subs => {
+				const title = "REMINDER!";
+				const message = req.body.title;
+				const payload = JSON.stringify({ title, message });
+				await webpush.sendNotification(subs.subscription, payload);
+				console.log(
+					`Subscription found for ${req.profile.username}. Notified.`
+				);
+			});
+			res.status(200).end();
+		} else {
+			console.log(`No subscription found for ${req.profile.username}.`);
+			res.status(400).end();
 		}
-		res.status(400).end();
 	} catch (error) {
-		res.status(400).end();
 		console.log(error);
+		res.status(400).end();
 	}
 });
 
