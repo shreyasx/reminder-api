@@ -4,7 +4,7 @@ const Todo = require("../models/todo");
 const nodemailer = require("nodemailer");
 const Token = require("../models/token");
 const crypto = require("crypto");
-
+const webpush = require("web-push");
 const transporter = nodemailer.createTransport({
 	service: "gmail",
 	auth: {
@@ -12,6 +12,15 @@ const transporter = nodemailer.createTransport({
 		pass: process.env.NODEMAILER_PASS,
 	},
 });
+const publicVapidKey =
+	"BHKwbXeFf6VxY3qUuCMArDUI5n-eqDkLWD9s7h1uJnNnSDt9jEL4tdh07Vw596yMYX54ky25yoTlg2gPAczTW1g";
+const privateVapidKey = "zON3UYLTAwvlVUGUnrAH1krctzk5Obv-HpYXDOyLIGw";
+
+webpush.setVapidDetails(
+	"mailto:test@test.com",
+	publicVapidKey,
+	privateVapidKey
+);
 
 exports.getUserById = (req, res, next, id) => {
 	User.findOne({ username: req.params.username }, (err, user) => {
@@ -69,7 +78,24 @@ exports.addReminder = (req, res) => {
 		});
 	};
 
-	const timeoutID = setTimeout(sendMail, timeLeft);
+	const timeoutID = setTimeout(async () => {
+		sendMail();
+		const { subscribed, subscription } = req.profile;
+		if (subscribed) {
+			try {
+				const title = "REMINDER!";
+				const message = req.body.title;
+				const payload = JSON.stringify({ title, message });
+				await webpush.sendNotification(subscription, payload);
+			} catch (error) {
+				console.log(error);
+				const user = await User.findById(req.profile._id);
+				user.subscribed = false;
+				user.subscription = {};
+				await user.save();
+			}
+		}
+	}, timeLeft);
 
 	const rem = new Reminder({ ...req.body, timeoutID });
 	rem.save((er, reminder) => {
@@ -237,4 +263,19 @@ exports.confirmationPost = (req, res, next) => {
 
 exports.isVerified = (req, res) => {
 	res.json(req.profile.isVerified);
+};
+
+exports.handleSubscribe = async (req, res) => {
+	try {
+		const { subscription } = req.body;
+		const user = await User.findById(req.profile._id);
+		if (!user) return res.status(400).end();
+		user.subscribed = true;
+		user.subscription = subscription;
+		await user.save();
+		res.status(200).end();
+	} catch (err) {
+		console.log(err);
+		res.status(400).end();
+	}
 };
