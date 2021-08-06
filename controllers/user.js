@@ -268,13 +268,16 @@ exports.isVerified = (req, res) => {
 exports.handleSubscribe = async (req, res) => {
 	try {
 		const { subscription } = req.body;
+		console.log(subscription);
 		const user = await User.findById(req.profile._id);
 		if (!user) return res.status(400).end();
 		user.subscribed = true;
 		user.subscription = subscription;
 		await user.save();
+		console.log(`Registered ${req.profile.username}.`);
 		res.status(200).end();
 	} catch (err) {
+		console.log(`Couldn't register ${req.profile.username}.`);
 		console.log(err);
 		res.status(400).end();
 	}
