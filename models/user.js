@@ -27,8 +27,6 @@ var userSchema = new mongoose.Schema(
 			required: false,
 		},
 		salt: String,
-		subscribed: { type: Boolean, default: false },
-		subscription: { type: Object, default: {} },
 	},
 	{ timestamps: true }
 );

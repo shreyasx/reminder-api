@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const Reminder = require("../models/reminder");
 const Todo = require("../models/todo");
+const Subscription = require("../models/subscription");
 const nodemailer = require("nodemailer");
 const Token = require("../models/token");
 const crypto = require("crypto");
@@ -70,30 +71,42 @@ exports.addReminder = (req, res) => {
 			"\n\nRegards\nShreyas Jamkhandi",
 	};
 
-	const sendMail = () => {
-		transporter.sendMail(mailOptions, function (err, msg) {
-			if (err) console.log("Send mail error -", err.message);
-			else
-				console.log(`Sent a reminder to ${req.profile.username} sucessfully.`);
+	const sendMail = () =>
+		new Promise((resolve, reject) => {
+			transporter.sendMail(mailOptions, function (err, msg) {
+				if (err) {
+					console.log("Send mail error -", err.message);
+					resolve();
+				} else {
+					console.log(
+						`Sent a reminder to ${req.profile.username} sucessfully.`
+					);
+					reject();
+				}
+			});
 		});
-	};
 
 	const timeoutID = setTimeout(async () => {
-		sendMail();
-		const { subscribed, subscription } = req.profile;
-		if (subscribed) {
-			try {
-				const title = "REMINDER!";
-				const message = req.body.title;
-				const payload = JSON.stringify({ title, message });
-				await webpush.sendNotification(subscription, payload);
-			} catch (error) {
-				console.log(error);
-				const user = await User.findById(req.profile._id);
-				user.subscribed = false;
-				user.subscription = {};
-				await user.save();
-			}
+		try {
+			await sendMail();
+			const del = await Reminder.deleteOne({ _id: req.params.reminderId });
+			console.log("deleted- ", del);
+			const subscriptions = await Subscription.find({
+				user: req.profile.username,
+			});
+			if (subscriptions.length > 0) {
+				subscriptions.map(async subs => {
+					const title = "REMINDER!";
+					const message = req.body.title;
+					const payload = JSON.stringify({ title, message });
+					await webpush.sendNotification(subs.subscription, payload);
+					console.log(
+						`Subscription found for ${req.profile.username}. Notified.`
+					);
+				});
+			} else console.log(`No subscription found for ${req.profile.username}.`);
+		} catch (error) {
+			console.log(error);
 		}
 	}, timeLeft);
 
@@ -268,13 +281,19 @@ exports.isVerified = (req, res) => {
 exports.handleSubscribe = async (req, res) => {
 	try {
 		const { subscription } = req.body;
-		console.log(subscription);
-		const user = await User.findById(req.profile._id);
-		if (!user) return res.status(400).end();
-		user.subscribed = true;
-		user.subscription = subscription;
-		await user.save();
-		console.log(`Registered ${req.profile.username}.`);
+		const sub = await Subscription.findOne({ subscription });
+		if (!sub) {
+			const newSub = new Subscription({
+				subscription,
+				user: req.profile.username,
+			});
+			await newSub.save();
+			console.log(`Registered ${req.profile.username}.`);
+			return res.status(200).end();
+		}
+		sub.user = req.profile.username;
+		await sub.save();
+		console.log(`Already registered ${req.profile.username}.`);
 		res.status(200).end();
 	} catch (err) {
 		console.log(`Couldn't register ${req.profile.username}.`);
