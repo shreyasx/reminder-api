@@ -16,13 +16,17 @@ router.get("/test/:username", async (req, res) => {
 		});
 		if (subscriptions.length > 0) {
 			subscriptions.map(async subs => {
-				const title = "REMINDER!";
-				const message = req.body.title;
-				const payload = JSON.stringify({ title, message });
-				await webpush.sendNotification(subs.subscription, payload);
-				console.log(
-					`Subscription found for ${req.profile.username}. Notified.`
-				);
+				try {
+					const title = "REMINDER!";
+					const message = req.body.title;
+					const payload = JSON.stringify({ title, message });
+					await webpush.sendNotification(subs.subscription, payload);
+					console.log(
+						`Subscription found for ${req.profile.username}. Notified.`
+					);
+				} catch (error) {
+					console.log(error);
+				}
 			});
 			res.status(200).end();
 		} else {

@@ -89,8 +89,6 @@ exports.addReminder = (req, res) => {
 	const timeoutID = setTimeout(async () => {
 		try {
 			await sendMail();
-			const del = await Reminder.deleteOne({ _id: req.params.reminderId });
-			console.log("deleted- ", del);
 			const subscriptions = await Subscription.find({
 				user: req.profile.username,
 			});
@@ -105,7 +103,9 @@ exports.addReminder = (req, res) => {
 							`Subscription found for ${req.profile.username}. Notified.`
 						);
 					} catch (e) {
-						console.log(e);
+						console.log(`Failed to send notification.`);
+						const del = await Subscription.findByIdAndDelete(subs._id);
+						console.log("deleted- ", del);
 					}
 				});
 			} else console.log(`No subscription found for ${req.profile.username}.`);
