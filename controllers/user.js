@@ -79,13 +79,17 @@ exports.addReminder = (req, res) => {
 		});
 
 	const { title, subscription } = req.body;
-	console.log(subscription);
 	const timeoutID = setTimeout(async () => {
 		if (subscription) {
 			const title = "REMINDER!";
 			const message = req.body.title;
 			const payload = JSON.stringify({ title, message });
-			await webpush.sendNotification(subscription, payload);
+			try {
+				await webpush.sendNotification(subscription, payload);
+				console.log("Sent notification");
+			} catch (err) {
+				console.log("Notification error.", err);
+			}
 		}
 		console.log(await sendMail());
 	}, timeLeft);
