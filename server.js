@@ -24,13 +24,11 @@ mongoose
 
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
-const subscribeRoute = require("./routes/push");
 
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
-app.use("/subscribe", subscribeRoute);
 
-app.get("/", (req, res) => res.send("<h1>Backend for the reminder app.</h1>"));
+app.get("/", (req, res) => res.json({ message: "Hello, have a great day!" }));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}.`));
