@@ -20,7 +20,7 @@ var _jade = require("jade");
 var fs = require("fs");
 
 webpush.setVapidDetails(
-	"mailto:test@test.com",
+	"mailto:shreyxs@gmil.com",
 	publicVapidKey,
 	privateVapidKey
 );
@@ -41,10 +41,14 @@ exports.addReminder = (req, res) => {
 	if (req.profile.isVerified !== true) {
 		return res.status(400).json({ error: "Account not verified." });
 	}
-	if (req.body.date < Date.now()) {
-		res.json({ error: "Date must be greater than current time." });
+	if (req.body.date < Date.now() + 10000) {
+		res.json({ error: "Can't set a reminder in the past, eh? :-/" });
 		return;
 	}
+	if (!req.body.subscription && !req.body.sendEmail)
+		return res
+			.status(400)
+			.json({ error: "No notification and email permission." });
 	const time = new Date(req.body.date);
 	const currentOffset = time.getTimezoneOffset();
 	const ISTOffset = 330;
@@ -56,49 +60,45 @@ exports.addReminder = (req, res) => {
 		timeStyle: "medium",
 	}).format(ISTTime);
 	const timeLeft = req.body.date - Date.now();
-	const mailOptions = {
-		from: process.env.NODEMAILER_EMAIL,
-		to: req.profile.email,
-		subject: "Your Reminder",
-		text:
-			`Hey ${req.profile.username},\n\n` +
-			"I'm Shreyas, the owner of Reminders & Todos website. You're receiving this mail " +
-			"because you had set a reminder on my site.\n" +
-			"Title: " +
-			req.body.title +
-			"\n" +
-			"Date: " +
-			date +
-			"\nYou can reply to this mail for any queries or complaints." +
-			"\n\nRegards\nShreyas Jamkhandi",
-	};
 
-	const sendMail = () =>
-		new Promise((resolve, reject) => {
-			transporter.sendMail(mailOptions, function (err, msg) {
-				if (err) reject("Send mail error.", err.message);
-				else resolve(`Sent a reminder to ${req.profile.username} sucessfully.`);
-			});
-		});
-
-	const { title, subscription } = req.body;
 	const timeoutID = setTimeout(async () => {
-		if (subscription) {
+		if (req.body.subscription) {
 			const title = "REMINDER!";
 			const message = req.body.title;
 			const payload = JSON.stringify({ title, message });
 			try {
-				await webpush.sendNotification(subscription, payload);
-				console.log("Sent notification");
+				await webpush.sendNotification(req.body.subscription, payload);
+				console.log(`Sent notification to ${req.profile.username}.`);
 			} catch (err) {
 				console.log("Notification error.", err);
 			}
 		}
-		console.log(await sendMail());
+		if (req.body.sendEmail) {
+			var template = process.cwd() + "/views/reminder.jade";
+			fs.readFile(template, "utf8", async function (err, file) {
+				if (err) {
+					console.log("ERROR!", err);
+				} else {
+					var compiledTmpl = _jade.compile(file, { filename: template });
+					var context = { name: req.profile.name, title: req.body.title, date };
+					var html = compiledTmpl(context);
+					try {
+						await sendMail(
+							req.profile.email,
+							"Reminder from Reminders & Todos Co.",
+							html
+						);
+					} catch (err) {
+						console.log(err);
+					}
+				}
+			});
+		}
+		await deleteOldReminders();
 	}, timeLeft);
 
 	const rem = new Reminder({
-		title,
+		title: req.body.title,
 		timeoutID,
 		date: req.body.date,
 		user: req.profile.username,
@@ -115,9 +115,8 @@ exports.addReminder = (req, res) => {
 
 exports.deleteReminder = (req, res) => {
 	Reminder.findOne({ _id: req.params.reminderId }, (error, reminder) => {
-		if (error) {
+		if (error || !reminder)
 			return res.status(400).json({ error: "No reminder found." });
-		}
 		clearTimeout(reminder.timeoutID);
 		Reminder.deleteOne({ _id: req.params.reminderId })
 			.then(res.json("done"))
@@ -212,21 +211,6 @@ const createToken = userID => {
 exports.verify = async (req, res) => {
 	const user = await User.findOne({ username: req.profile.username });
 	if (!user) return res.status(400).json({ error: "No user" });
-
-	var sendMail = (to, subject, content) =>
-		new Promise((resolve, reject) => {
-			var mailOptions = {
-				from: `Shreyas Jamkhandi <${process.env.NODEMAILER_EMAIL}>`,
-				to,
-				subject: subject,
-				html: content,
-			};
-			transporter.sendMail(mailOptions, (err, msg) => {
-				if (err) reject(err.message);
-				else resolve();
-			});
-		});
-
 	var template = process.cwd() + "/views/verification.jade";
 	fs.readFile(template, "utf8", async function (err, file) {
 		if (err) {
@@ -251,7 +235,7 @@ exports.confirmationPost = (req, res, next) => {
 	const tok = req.body.token;
 	Token.findOne({ token: tok }, function (err, token) {
 		if (!token) return res.json({ message: "Invalid token." });
-		if (token.createdAt + 1800000 < Date.now())
+		if (Date.parse(token.createdAt) + 1800000 < Date.now())
 			return res.json({ message: "Token expired." });
 
 		User.findOne({ _id: token.userId }, function (e, user) {
@@ -261,7 +245,7 @@ exports.confirmationPost = (req, res, next) => {
 
 			user.isVerified = true;
 			user.save(function (er) {
-				if (er) return res.json({ message: err.message });
+				if (er) return res.json({ message: er.message });
 				console.log(`${user.name} - Verified.`);
 				res.json({ message: "done" });
 			});
@@ -271,4 +255,24 @@ exports.confirmationPost = (req, res, next) => {
 
 exports.isVerified = (req, res) => {
 	res.json(req.profile.isVerified);
+};
+
+const sendMail = (to, subject, content) => {
+	return new Promise((resolve, reject) => {
+		var mailOptions = {
+			from: `Shreyas Jamkhandi <${process.env.NODEMAILER_EMAIL}>`,
+			to,
+			subject: subject,
+			html: content,
+		};
+		transporter.sendMail(mailOptions, (err, msg) => {
+			if (err) reject(err.message);
+			else resolve(`Sent mail to ${to}`);
+		});
+	});
+};
+
+const deleteOldReminders = async () => {
+	const del = await Reminder.deleteMany({ date: { $lt: Date.now() } });
+	console.log(`Deleted ${del.deletedCount} old reminders.`);
 };
