@@ -1,0 +1,49 @@
+doctype html
+html
+  head
+    title Reminders & Todos
+    style.
+      @import url("https://fonts.googleapis.com/css2?family=Lato:wght@400&display=swap");
+      body {
+      font-family: "Lato", sans-serif;
+      font-size: 1.2em;
+      }
+      a.button1 {
+      display: inline-block;
+      padding: 0.35em 1.2em;
+      border: 0.1em solid #000;
+      margin: 0 0.3em 0.3em 0;
+      border-radius: 0.12em;
+      box-sizing: border-box;
+      text-decoration: none;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 300;
+      color: #000;
+      text-align: center;
+      transition: all 0.2s;
+      }
+      a.button1:hover {
+      color: rgb(22, 76, 255);
+      background-color: #FFFFFF;
+      }
+      @media all and (max-width:30em) {
+      a.button1 {
+      display: block;
+      margin: 0.4em auto;
+      }
+      }
+  body
+    h1 Hi #{name},
+    p
+      | I'm Shreyas Jamkhandi. The Founder, Co-Founder, CEO and Lead Web Developer at 
+      a(href='https://remindersandtodos.netlify.app') Reminders & Todos Co.
+      br
+      | You're receiving this email because you signed up on my website. If it was you,
+      | you may click the button below, to verify your account. If not, just ignore this mail.
+    a.button1(href='https://remindersandtodos.netlify.app/verify/#{token}')
+      | VERIFY
+    p Reply to this email in case of any queries.
+    p
+      | Cheers, 🍻
+      br
+      |     Shreyas Jamkhandi

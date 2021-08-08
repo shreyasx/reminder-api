@@ -6,7 +6,7 @@ const Token = require("../models/token");
 const crypto = require("crypto");
 const webpush = require("web-push");
 const transporter = nodemailer.createTransport({
-	service: "gmail",
+	service: "Gmail",
 	auth: {
 		user: process.env.NODEMAILER_EMAIL,
 		pass: process.env.NODEMAILER_PASS,
@@ -15,6 +15,9 @@ const transporter = nodemailer.createTransport({
 const publicVapidKey =
 	"BHKwbXeFf6VxY3qUuCMArDUI5n-eqDkLWD9s7h1uJnNnSDt9jEL4tdh07Vw596yMYX54ky25yoTlg2gPAczTW1g";
 const privateVapidKey = "zON3UYLTAwvlVUGUnrAH1krctzk5Obv-HpYXDOyLIGw";
+
+var _jade = require("jade");
+var fs = require("fs");
 
 webpush.setVapidDetails(
 	"mailto:test@test.com",
@@ -206,58 +209,61 @@ const createToken = userID => {
 	return tokenS.token;
 };
 
-exports.verify = (req, res) => {
-	User.findOne({ username: req.profile.username }, (er, user) => {
-		const mailOptions = {
-			from: process.env.NODEMAILER_EMAIL,
-			to: user.email,
-			subject: "Account Verification Token",
-			text:
-				`Hey ${user.name},\n\n` +
-				"I'm Shreyas, the owner of Reminders & Todos website. If you didn't " +
-				"create an account on my website, please ignore this mail.\n" +
-				"However, if you did, you can verify your account by clicking the link: \n" +
-				process.env.CLIENT +
-				"verify/" +
-				createToken(user._id) +
-				"\nYou can reply to this mail for any queries." +
-				"\n\nRegards\nShreyas Jamkhandi",
-		};
-		transporter.sendMail(mailOptions, function (err, msg) {
-			if (err) {
-				console.log("send mail error -", err.message);
-				res.json({ error: "Couldn't send mail to your address." });
-			} else {
-				console.log(
-					`Sent account verification email to ${user.email} sucessfully.`
-				);
-				res.json("Sent mail");
-			}
+exports.verify = async (req, res) => {
+	const user = await User.findOne({ username: req.profile.username });
+	if (!user) return res.status(400).json({ error: "No user" });
+
+	var sendMail = (to, subject, content) =>
+		new Promise((resolve, reject) => {
+			var mailOptions = {
+				from: `Shreyas Jamkhandi <${process.env.NODEMAILER_EMAIL}>`,
+				to,
+				subject: subject,
+				html: content,
+			};
+			transporter.sendMail(mailOptions, (err, msg) => {
+				if (err) reject(err.message);
+				else resolve();
+			});
 		});
+
+	var template = process.cwd() + "/views/verification.jade";
+	fs.readFile(template, "utf8", async function (err, file) {
+		if (err) {
+			console.log("ERROR!", err);
+			return res.status(400).end();
+		} else {
+			var compiledTmpl = _jade.compile(file, { filename: template });
+			var context = { name: user.name, token: createToken(user._id) };
+			var html = compiledTmpl(context);
+			try {
+				await sendMail(user.email, "Account Verification Link", html);
+				res.status(200).json(true);
+			} catch (err) {
+				console.log(err);
+				res.status(400).end();
+			}
+		}
 	});
 };
 
 exports.confirmationPost = (req, res, next) => {
 	const tok = req.body.token;
 	Token.findOne({ token: tok }, function (err, token) {
-		if (!token) return res.json({ error: "Invalid token" });
+		if (!token) return res.json({ message: "Invalid token." });
 		if (token.createdAt + 1800000 < Date.now())
-			return res.json({ error: "Token expired" });
+			return res.json({ message: "Token expired." });
 
 		User.findOne({ _id: token.userId }, function (e, user) {
-			if (!user) return res.json({ error: "Invalid token" });
+			if (!user) return res.json({ message: "Invalid token." });
 			if (user.isVerified)
-				return res.json({
-					error: "This user has already been verified.",
-				});
+				return res.json({ message: "User already verified." });
 
-			// Verify and save the user
 			user.isVerified = true;
 			user.save(function (er) {
-				if (er) return res.json({ error: err.message });
+				if (er) return res.json({ message: err.message });
 				console.log(`${user.name} - Verified.`);
-				res.json(true);
-				Token.deleteOne({ token: tok }).then(console.log("Deleted token."));
+				res.json({ message: "done" });
 			});
 		});
 	});
