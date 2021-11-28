@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer");
 const Token = require("../models/token");
 const crypto = require("crypto");
 const webpush = require("web-push");
+const Subscription = require("../models/subscription");
 const transporter = nodemailer.createTransport({
 	service: "Gmail",
 	auth: {
@@ -45,10 +46,10 @@ exports.addReminder = (req, res) => {
 		res.json({ error: "Can't set a reminder in the past, eh? :-/" });
 		return;
 	}
-	if (!req.body.subscription && !req.body.sendEmail)
-		return res
-			.status(400)
-			.json({ error: "No notification and email permission." });
+	// if (!req.body.subscription && !req.body.sendEmail)
+	// 	return res
+	// 		.status(400)
+	// 		.json({ error: "No notification and email permission." });
 	const time = new Date(req.body.date);
 	const currentOffset = time.getTimezoneOffset();
 	const ISTOffset = 330;
@@ -62,17 +63,31 @@ exports.addReminder = (req, res) => {
 	const timeLeft = req.body.date - Date.now();
 
 	const timeoutID = setTimeout(async () => {
-		if (req.body.subscription) {
-			const title = "REMINDER!";
-			const message = req.body.title;
-			const payload = JSON.stringify({ title, message });
-			try {
-				await webpush.sendNotification(req.body.subscription, payload);
-				console.log(`Sent notification to ${req.profile.username}.`);
-			} catch (err) {
-				console.log("Notification error.", err);
-			}
+		// if (req.body.subscription) {
+		// 	const title = "REMINDER!";
+		// 	const message = req.body.title;
+		// 	const payload = JSON.stringify({ title, message });
+		// 	try {
+		// 		await webpush.sendNotification(req.body.subscription, payload);
+		// 		console.log(`Sent notification to ${req.profile.username}.`);
+		// 	} catch (err) {
+		// 		console.log("Notification error.", err);
+		// 	}
+		// }
+
+		const subs = await Subscription.find({ user: req.profile.username }).exec();
+		const title = "REMINDER!";
+		const message = req.body.title;
+		const payload = JSON.stringify({ title, message });
+		try {
+			subs.map(async sub => {
+				await webpush.sendNotification(sub, payload);
+			});
+			console.log(`Sent notification to ${req.profile.username}.`);
+		} catch (err) {
+			console.log("Notification error.", err);
 		}
+
 		if (req.body.sendEmail) {
 			var template = process.cwd() + "/views/reminder.jade";
 			fs.readFile(template, "utf8", async function (err, file) {

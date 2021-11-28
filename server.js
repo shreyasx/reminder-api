@@ -22,9 +22,11 @@ mongoose
 
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
+const subscriptionRoutes = require("./routes/subscription");
 
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
+app.use("/subscribe", subscriptionRoutes);
 
 app.get("/", (req, res) => res.json({ message: "Hello, have a great day!" }));
 
