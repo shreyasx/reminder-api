@@ -81,6 +81,7 @@ exports.addReminder = (req, res) => {
 		const payload = JSON.stringify({ title, message });
 		try {
 			subs.map(async sub => {
+				console.log(`sending to ${sub.endpoint}`);
 				await webpush.sendNotification(sub, payload);
 			});
 			console.log(`Sent notification to ${req.profile.username}.`);
