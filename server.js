@@ -28,5 +28,5 @@ app.use("/user", userRoutes);
 
 app.get("/", (req, res) => res.json({ message: "Hello, have a great day!" }));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}.`));
