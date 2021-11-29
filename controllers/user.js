@@ -251,7 +251,8 @@ exports.confirmationPost = (req, res, next) => {
 	const tok = req.body.token;
 	Token.findOne({ token: tok }, function (err, token) {
 		if (!token) return res.json({ message: "Invalid token." });
-		if (Date.parse(token.createdAt) + 1800000 >= Date.now())
+		console.log(Date.now() < Date.parse(token.createdAt) + 1800000);
+		if (!(Date.now() < Date.parse(token.createdAt) + 1800000))
 			return res.json({ message: "Token expired." });
 
 		User.findOne({ _id: token.userId }, function (e, user) {
