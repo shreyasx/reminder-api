@@ -5,7 +5,6 @@ var subscriptionSchema = new mongoose.Schema(
 		endpoint: {
 			type: String,
 			required: true,
-			unique: true,
 		},
 		expirationTime: String,
 		keys: {
