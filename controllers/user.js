@@ -13,8 +13,9 @@ const transporter = nodemailer.createTransport({
 		pass: process.env.NODEMAILER_PASS,
 	},
 });
+
 const publicVapidKey =
-	"BHKwbXeFf6VxY3qUuCMArDUI5n-eqDkLWD9s7h1uJnNnSDt9jEL4tdh07Vw596yMYX54ky25yoTlg2gPAczTW1g";
+	"BGiotRx_nAPD_0fJ6gz840HPnR7PneLMhmczTzOrmsWapsg5ZEshteRd5hkE2W3NZ_gBmYdDQNxg_gRj9iTEtA4";
 const privateVapidKey = process.env.PRIVATE_VAPID_KEY;
 
 var _jade = require("jade");
