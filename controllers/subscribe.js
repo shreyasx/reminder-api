@@ -7,7 +7,7 @@ exports.save = async (req, res) => {
 		console.log("Saved.");
 		res.status(200).end();
 	} catch (error) {
-		// console.log(error);
+		console.log(error);
 		console.log("Not saved.");
 		res.status(500).end();
 	}
