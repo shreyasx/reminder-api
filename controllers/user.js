@@ -81,10 +81,10 @@ exports.addReminder = (req, res) => {
 		const message = req.body.title;
 		const payload = JSON.stringify({ title, message });
 		try {
-			subs.map(async sub => {
+			for (const sub of subs) {
 				console.log(`sending to ${sub.endpoint}`);
 				await webpush.sendNotification(sub, payload);
-			});
+			}
 			console.log(`Sent notification to ${req.profile.username}.`);
 		} catch (err) {
 			console.log("Notification error.", err);
